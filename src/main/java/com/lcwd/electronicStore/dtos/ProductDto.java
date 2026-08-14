@@ -9,6 +9,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Date;
+
 
 @Getter
 @Setter
@@ -25,6 +27,7 @@ public class ProductDto {
     private int quantity;
     private double price;
     private double discountedPrice;
+    private Date addedDate;
     private boolean live;
     private boolean stock;
 }
