@@ -15,6 +15,7 @@ public class CartItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int cartItemId;
+//    here we use many to one mapping
     @ManyToOne
     @JoinColumn(name = "product_id")
     private Product product;
