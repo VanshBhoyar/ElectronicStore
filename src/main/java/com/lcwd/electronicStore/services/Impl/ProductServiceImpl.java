@@ -2,19 +2,27 @@ package com.lcwd.electronicStore.services.Impl;
 
 import com.lcwd.electronicStore.dtos.PageableResponse;
 import com.lcwd.electronicStore.dtos.ProductDto;
+import com.lcwd.electronicStore.entities.Category;
 import com.lcwd.electronicStore.entities.Product;
 import com.lcwd.electronicStore.exceptions.ResourceNotFountException;
 import com.lcwd.electronicStore.helper.Helper;
+import com.lcwd.electronicStore.repositories.CategoryRepository;
 import com.lcwd.electronicStore.repositories.ProductRepository;
 import com.lcwd.electronicStore.services.ProductService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Date;
 import java.util.UUID;
 
@@ -25,6 +33,11 @@ public class ProductServiceImpl implements ProductService {
     private ProductRepository productRepository;
     @Autowired
     private ModelMapper mapper;
+    @Autowired
+    private CategoryRepository categoryRepository;
+
+    @Value("${product.image.path}")
+    private String imagePath;
     
     @Override
     public ProductDto createProduct(ProductDto productDto) {
@@ -48,6 +61,7 @@ public class ProductServiceImpl implements ProductService {
         product.setDiscountedPrice(productDto.getDiscountedPrice());
         product.setLive(productDto.isLive());
         product.setStock(productDto.isStock());
+        product.setImageName(productDto.getImageName());
 
         Product savedProduct = productRepository.save(product);
 
@@ -57,6 +71,21 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public void deleteProduct(String productId) {
         Product product = productRepository.findById(productId).orElseThrow(() -> new ResourceNotFountException("Product is not found with given ID !!"));
+
+        String fullPath = imagePath + product.getImageName();
+
+        try {
+            Path path = Paths.get(fullPath);
+            Files.delete(path);
+        } catch (NoSuchFileException ex){
+            
+            ex.printStackTrace();
+        }
+        catch (IOException e) {
+//            throw new RuntimeException(e);
+            e.printStackTrace();
+        }
+
         productRepository.delete(product);
     }
 
@@ -88,6 +117,41 @@ public class ProductServiceImpl implements ProductService {
         Sort sort = (sortDir.equalsIgnoreCase("desc")) ? (Sort.by(sortBy).descending()) : (Sort.by(sortBy).ascending());
         Pageable pageable= PageRequest.of(pageNumber, pageSize, sort);
         Page<Product> page = productRepository.findByTitleContaining(subTitle,pageable);
+        return Helper.getPageableResponse(page, ProductDto.class);
+    }
+
+    @Override
+    public ProductDto createWithCategory(String categoryId, ProductDto productDto) {
+        Category category = categoryRepository.findById(categoryId).orElseThrow(() -> new ResourceNotFountException("Category not found !!"));
+        Product product = mapper.map(productDto, Product.class);
+//        productId
+        String productId = UUID.randomUUID().toString();
+        product.setProductId(productId);
+//        Date
+        product.setAddedDate(new Date());
+        product.setCategory(category);
+        Product saveProduct = productRepository.save(product);
+        return mapper.map(saveProduct, ProductDto.class);
+
+    }
+
+    @Override
+    public ProductDto updateCategoryWithProduct(String categoryId, String productId) {
+
+        Product product = productRepository.findById(productId).orElseThrow(() -> new ResourceNotFountException("Product is not found with given Id!!"));
+        Category category = categoryRepository.findById(categoryId).orElseThrow(() -> new ResourceNotFountException("Category is not found with given Id!!"));
+        product.setCategory(category);
+        Product savedProduct = productRepository.save(product);
+        return mapper.map(savedProduct,ProductDto.class);
+    }
+
+    @Override
+    public PageableResponse<ProductDto> getAllCategoryProducts(String categoryId, int pageNumber, int pageSize, String sortBy, String sortDir) {
+        Category category = categoryRepository.findById(categoryId).orElseThrow(() -> new ResourceNotFountException("Category not found with given Id!!"));
+
+        Sort sort = (sortDir.equalsIgnoreCase("desc"))?(Sort.by(sortBy).descending()):(Sort.by(sortBy).ascending());
+        Pageable pageable = PageRequest.of(pageNumber, pageSize, sort);
+        Page<Product> page = productRepository.findByCategory(category, pageable);
         return Helper.getPageableResponse(page, ProductDto.class);
     }
 }
