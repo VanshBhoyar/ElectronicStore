@@ -63,26 +63,27 @@ public class CartServiceImpl implements CartService {
             cart.setCreatedAt(new Date());
         }
 
-        AtomicReference<Boolean> updated = new AtomicReference<>(false);
+        boolean updated = false;
+
         List<CartItem> items = cart.getItems();
-        List<CartItem> updatedItems = items.stream().map(item -> {
+
+        for (CartItem item : items) {
             if (item.getProduct().getProductId().equals(productId)) {
                 item.setQuantity(quantity);
-                item.setTotalPrice(quantity * product.getPrice());
-                updated.set(true);
+                item.setTotalPrice(quantity * product.getDiscountedPrice());
+                updated = true;
+                break;
             }
-            return item;
-        }).collect(Collectors.toList());
+        }
 
-        cart.setItems(updatedItems);
-
-        if(!updated.get()){
+        if (!updated) {
             CartItem cartItem = CartItem.builder()
                     .quantity(quantity)
-                    .totalPrice(quantity * product.getPrice())
+                    .totalPrice(quantity * product.getDiscountedPrice())
                     .cart(cart)
                     .product(product)
                     .build();
+
             cart.getItems().add(cartItem);
         }
 
