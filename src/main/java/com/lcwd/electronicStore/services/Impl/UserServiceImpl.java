@@ -2,9 +2,11 @@ package com.lcwd.electronicStore.services.Impl;
 
 import com.lcwd.electronicStore.dtos.PageableResponse;
 import com.lcwd.electronicStore.dtos.UserDto;
+import com.lcwd.electronicStore.entities.Role;
 import com.lcwd.electronicStore.entities.User;
 import com.lcwd.electronicStore.exceptions.ResourceNotFountException;
 import com.lcwd.electronicStore.helper.Helper;
+import com.lcwd.electronicStore.repositories.RoleRepository;
 import com.lcwd.electronicStore.repositories.UserRepository;
 import com.lcwd.electronicStore.services.UserService;
 import org.modelmapper.ModelMapper;
@@ -24,16 +26,20 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-public class ServiceImpl implements UserService {
+public class UserServiceImpl implements UserService {
     @Autowired
     private ModelMapper mapper;
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
 
     @Value("${user.profile.image.path}")
     private String imagePath;
@@ -41,7 +47,10 @@ public class ServiceImpl implements UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    private Logger logger = LoggerFactory.getLogger(ServiceImpl.class);
+    @Value("${normal.role.id}")
+    private String normalRoleId;
+
+    private Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
     @Override
     public UserDto createUser(UserDto userDto) {
 
@@ -52,6 +61,14 @@ public class ServiceImpl implements UserService {
         userDto.setPassword(passwordEncoder.encode(userDto.getPassword()));
 
         User user = dtoToEntity(userDto);
+        if (user.getRoles() == null) {
+            user.setRoles(new HashSet<>());
+        }
+
+//        Fetch role and set to user
+        Role role = roleRepository.findById(normalRoleId).get();
+        user.getRoles().add(role);
+
         User savedUser = userRepository.save(user);
 
         UserDto newDto = entityToDto(savedUser);
