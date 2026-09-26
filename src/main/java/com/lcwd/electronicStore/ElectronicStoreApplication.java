@@ -35,8 +35,8 @@ public class ElectronicStoreApplication implements CommandLineRunner {
 
 		try{
 
-			Role roleAdmin = Role.builder().roleId(adminRoleId).roleName("Role_Admin").build();
-			Role roleNormal = Role.builder().roleId(normalRoleId).roleName("Role_Normal").build();
+			Role roleAdmin = Role.builder().roleId(adminRoleId).roleName("ADMIN").build();
+			Role roleNormal = Role.builder().roleId(normalRoleId).roleName("NORMAL").build();
 			roleRepository.save(roleAdmin);
 			roleRepository.save(roleNormal);
 
